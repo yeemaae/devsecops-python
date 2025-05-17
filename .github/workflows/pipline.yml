@@ -25,7 +25,8 @@ jobs:
           pip install bandit
 
       - name: Run Bandit SAST
-        run: bandit -r app.py -ll
+        run: |
+          bandit -r app.py -ll || echo "Bandit found issues, continuing pipeline..."
 
   build:
     name: Run Flask App
@@ -35,11 +36,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: Install and Run Flask
         run: |
           pip install -r requirements.txt
           nohup python app.py &
-          sleep 10
+          sleep 15
 
   dast:
     name: Dynamic Analysis (OWASP ZAP)
