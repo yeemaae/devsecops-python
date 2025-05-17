@@ -1,0 +1,52 @@
+name: DevSecOps Python CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sast:
+    name: Static Analysis (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install bandit
+
+      - name: Run Bandit SAST
+        run: bandit -r app.py -ll
+
+  build:
+    name: Run Flask App
+    needs: sast
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install and Run Flask
+        run: |
+          pip install -r requirements.txt
+          nohup python app.py &
+          sleep 10
+
+  dast:
+    name: Dynamic Analysis (OWASP ZAP)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: ZAP Scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: "http://localhost:5000"
